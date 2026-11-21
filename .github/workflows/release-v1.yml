@@ -1,0 +1,63 @@
+name: Publish v1.0.0
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/release-v1.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: release-v1.0.0
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      SOURCE_SHA: fc366d382061b5c995172fa0f381019a3c4ec653
+      ProgramData: /tmp
+    steps:
+      - name: Fetch verified source and run checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init source
+          git -C source remote add origin "https://github.com/$GH_REPO.git"
+          git -C source fetch --depth=1 origin "$SOURCE_SHA"
+          git -C source checkout --detach FETCH_HEAD
+          test "$(git -C source rev-parse HEAD)" = "$SOURCE_SHA"
+          cd source
+          python3 -m unittest discover -s tests -v
+          pwsh -NoProfile -File tests/Check-Syntax.ps1
+      - name: Build source archive and checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C source archive --format=zip --prefix=tailscale-lancache/ --output="$GITHUB_WORKSPACE/tailscale-lancache-v1.0.0-source.zip" HEAD
+          sha256sum tailscale-lancache-v1.0.0-source.zip > SHA256SUMS.txt
+          cat > release-notes.md <<'NOTES'
+          First source release of Steam LANCache over Tailscale for Docker-based TrueNAS and Windows clients.
+
+          Included:
+          - Configurable server Compose generator, with a 450 GiB cache default and validation against a 512 GB dataset budget.
+          - Windows installer with a checksum-verified DNS proxy download, protected runtime files, owned DNS rules and startup tasks.
+          - Tailscale route preference and MagicDNS maintenance, plus uninstall and rollback support.
+          - Installation guide, connectivity test and source validation tests.
+
+          Installation: download and extract the source ZIP, then follow README.md. Set your own cache address, LAN, dataset path and tailnet suffix. Tailscale login, route approval and Mullvad exclusions are manual steps. No keys, personal deployment details or third-party executables are bundled.
+
+          Validation: source checks passed; the original deployment passed VPN-on/off connectivity checks. A fresh-machine installation, reboot test, actual Steam cache HIT and throughput test remain outstanding. This is a source release, not a signed executable installer. There is no automatic cache DNS failover.
+
+          Scope: Steam v1 only. Microsoft, EA, Epic, GOG, Amazon Games, Nexus Mods and LoversLab support are future research targets and are not implemented.
+          NOTES
+      - name: Publish release
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view v1.0.0 --json url --jq .url; then
+            echo "Release already exists; leaving published assets unchanged."
+          else
+            gh release create v1.0.0 tailscale-lancache-v1.0.0-source.zip SHA256SUMS.txt --target "$SOURCE_SHA" --title "v1.0.0 - Steam LANCache over Tailscale" --notes-file release-notes.md --latest
+          fi
