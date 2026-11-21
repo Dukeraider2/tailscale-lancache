@@ -91,6 +91,7 @@ Deliverable for each run: a redacted endpoint map with observation time/TTL, pro
 
 ### Nexus Mods — archive reuse with an authorized download adapter
 
+- The [selected manual-download pilot](validation/nexus-manual-download.md) completed first/repeated HTTPS transfers through Tailscale with Mullvad connected and disconnected, with matching archive hashes. It produced no HTTP payload/HITs; transparent caching remains unvalidated and Nexus stays research-only. No system-wide Nexus DNS profile was enabled.
 - Track game/mod/file IDs and version, checksum, dependencies and mod-manager metadata. Integrate with Vortex/MO2 download folders rather than treating authenticated web pages as cache payloads.
 - Nexus's [official API client](https://github.com/Nexus-Mods/node-nexus-api/blob/master/docs/classes/_nexus_.nexus.md) distinguishes Premium-generated links from website-generated keys for other users. Preserve that distinction; obtain new links when they expire and obey returned limits/backoff. See [API rate-limit guidance](https://help.nexusmods.com/article/105-i-have-reached-a-daily-or-hourly-limit-api-requests-have-been-consumed-rate-limit-exceeded-what-does-this-mean).
 - Use the stable API where suitable; [GraphQL v2 is still marked in development](https://graphql.nexusmods.com/). Do not assume an unrestricted production OAuth path.
@@ -125,3 +126,4 @@ Deliverable for each run: a redacted endpoint map with observation time/TTL, pro
 4. **Authenticated adapters:** Nexus's supported flows, LoversLab manual import, then Amazon/Epic local-library paths only where restore/update behavior is demonstrated.
 
 Each pilot needs a chosen owned/public test item and current client version. Acceptance includes login/catalog remaining normal, correct content identity, warm reuse evidence appropriate to its mechanism, integrity, updates/resume, VPN-on/off, remote Tailscale, reboot, peer/server outage, no accidental VPN bypass, and clean uninstall. Scope an acceptance result to the tested client/title/build. No new profile is production-ready merely because it appears in the catalog or this plan.
+
