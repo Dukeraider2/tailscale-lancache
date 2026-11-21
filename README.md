@@ -88,4 +88,4 @@ Generated deployment files, runtime configuration, authentication state, logs, d
 
 v1 supports Steam discovery and the coexistence configuration above. The v2 branch adds opt-in experimental profile generation for Epic, EA/Origin, Microsoft Xbox content and Microsoft updates. Those profiles have not passed download/cache-HIT acceptance tests. GOG, Amazon Games, Nexus Mods and LoversLab remain research-only and cannot be enabled. HTTPS, authentication, signed URLs and publisher behavior need separate evaluation; this project does not intercept TLS or promise those services can be cached.
 
-Run source checks with `python -m unittest discover -s tests -v`, `powershell -NoProfile -File tests/Check-Syntax.ps1` and `powershell -NoProfile -File tests/Check-ServicePlan.ps1`. No production settings are changed by these checks.
+Run source checks with `python -m unittest discover -s tests -v`, `powershell -NoProfile -File tests/Check-Syntax.ps1`, `powershell -NoProfile -File tests/Check-ServicePlan.ps1` and `powershell -NoProfile -File tests/Check-StagedEndpoint.ps1`. No production settings are changed by these checks.

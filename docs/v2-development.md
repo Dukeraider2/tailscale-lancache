@@ -60,9 +60,33 @@ python server/generate.py --cache-ip 172.28.80.10 --subnet 172.28.80.0/24 --gate
 
 Create a separate child dataset with a 16 GB hard quota and verify sufficient free space under the parent cache quota. The 4 GiB content cache leaves the default 10 GiB free-space allowance within that child quota. A child dataset inside a 512 GB capped parent does not increase the parent limit. Inspect actual usage before starting it; do not reduce the live cache's size or delete content to make room automatically. Authenticate the staging Tailscale node and approve only its route.
 
-Before changing any client DNS, use explicit per-request address overrides to test staging HTTP and TLS connectivity. The v2 installer is not an in-place migration mechanism and refuses to overwrite an existing runtime. Keep the current Steam DNS rules pointing at the live cache during initial probes. A separate, reversible Epic-only client DNS trial still needs implementation and validation before testing the launcher alongside an existing v1 client.
+Before changing any client DNS, test the staged route, cache heartbeat, HTTP and TLS forwarding with explicit per-request address overrides:
 
-### Per-service acceptance
+```powershell
+.\windows\Test-StagedEndpoint.ps1 -ServicePlan '.\generated\client-plan.json' -Hostname 'download.epicgames.com'
+```
+
+This read-only probe requires the approved Tailscale `/32` route and validates the origin HTTPS certificate without certificate exceptions. It uses HEAD requests, does not change DNS or VPN state, and does not download game content. An origin HTTP error such as 403 can still establish transport reachability; the report includes status and curl exit codes and explicitly leaves `CacheHitProven` false. Run it in both VPN states. Content hostnames in a profile are not a guarantee that every hostname currently serves HTTP or TLS successfully; investigate failures before redirecting the launcher.
+
+The v2 installer is not an in-place migration mechanism and refuses to overwrite an existing runtime. Keep the current Steam DNS rules pointing at the live cache during initial probes. A separate, reversible Epic-only client DNS trial still needs implementation and validation before testing the launcher alongside an existing v1 client.
+
+### Local TrueNAS installer fallback
+
+If browser control is unavailable, `server/stage_truenas.py` can run on the TrueNAS host using its existing local `midclt`, Docker, `ip` and Python tools. It uses the documented [custom app API](https://api.truenas.com/v25.10/api_methods_app.create.html); it does not create an API key, enable SSH or require a password in code.
+
+First inspect the plan without applying changes, using your real parent dataset and tailnet suffix:
+
+```sh
+sudo python3 server/stage_truenas.py --parent-dataset POOL/lancache --tailnet-suffix example-tailnet.ts.net
+```
+
+The installer checks that the parent exists at its expected mountpoint, has a hard quota and at least 16 GB available, and that the proposed bridge subnet does not overlap existing Docker networks or host IPv4 routes. Select a different subnet with `--cache-ip`, `--subnet` and `--gateway` if needed; also check it against routes advertised elsewhere in the tailnet. It refuses to reuse any existing `stage-epic` child, staging app or staging path.
+
+After reviewing the plan, rerun with `--apply`. That mode pulls the official cache image, pins the pulled digest and determines its worker UID/GID. It then creates only a 16 GB `stage-epic` child dataset, private state/deployment directories and the separate `epic-lancache-stage` custom app. Cache and log directories use the image's worker ownership. The parent quota and existing apps remain unchanged. A failed new deployment is left for inspection; the script does not destroy datasets or delete an app automatically.
+
+Authenticate the new Tailscale node from its container logs and approve only the cache `/32` route before probing it from Windows. The generated private deployment and client plan are stored under the staging dataset's `deployment` directory; keep them outside Git. The installer has offline tests, including refusal and default no-write behavior; a live TrueNAS run is still part of staging acceptance, especially on nightly builds whose API may differ.
+
+### Per-service acceptance checklist
 
 For each service, record the launcher/version and check all of the following with Mullvad connected and disconnected:
 

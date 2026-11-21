@@ -21,3 +21,4 @@ jobs:
         run: |
           & ./tests/Check-Syntax.ps1
           & ./tests/Check-ServicePlan.ps1
+          & ./tests/Check-StagedEndpoint.ps1
