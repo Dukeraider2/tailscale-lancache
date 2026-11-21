@@ -39,8 +39,12 @@ try {
         try { & $scriptPath -ServicePlan $fixture -Hostname $hostToProbe | Out-Null } catch { $rejected = $true }
         if (-not $rejected) { throw "Unsafe probe accepted: $mode" }
     }
-    Write-Output 'PASS: staged transport probes require the Tailscale route and valid TLS, preserve DNS, and never claim a cache HIT.'
 } finally {
     Remove-Item -LiteralPath $fixture -Force -ErrorAction SilentlyContinue
     Remove-Variable -Name StageProbeWrongRoute,StageProbeTLSFailure,StageProbeCalls -Scope Global -ErrorAction SilentlyContinue
 }
+# The mock deliberately sets a failing native exit code for certificate errors.
+# Do not let that expected test case leak into the caller or GitHub's shell wrapper.
+$global:LASTEXITCODE = 0
+Write-Output 'PASS: staged transport probes require the Tailscale route and valid TLS, preserve DNS, and never claim a cache HIT.'
+
