@@ -22,8 +22,10 @@ def build(args):
         raise ValueError('Cache and gateway must be distinct addresses in the subnet.')
     if address in (network.network_address, network.broadcast_address) or gateway in (network.network_address, network.broadcast_address):
         raise ValueError('Network and broadcast addresses are not usable hosts.')
-    if not re.fullmatch(r'[a-zA-Z0-9_.:-]+', args.interface):
+    if args.network_driver == 'ipvlan' and (not args.interface or not re.fullmatch(r'[a-zA-Z0-9_.:-]+', args.interface)):
         raise ValueError('Invalid parent interface.')
+    if not re.fullmatch(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?', args.hostname):
+        raise ValueError('Tailscale hostname must be a DNS label of at most 63 characters.')
     if not re.fullmatch(r'[a-z0-9-]+\.ts\.net', args.tailnet_suffix):
         raise ValueError('Enter the actual tailnet MagicDNS suffix, ending in .ts.net.')
     if not re.fullmatch(r'/[a-zA-Z0-9_./-]+', args.dataset) or '..' in args.dataset.split('/'):
@@ -45,7 +47,7 @@ def build(args):
             networks={'cache_lan': {'ipv4_address': ip}}),
         'tailscale': service('tailscale/tailscale:stable', '256m', **shared,
             cap_add=['NET_ADMIN'], devices=['/dev/net/tun:/dev/net/tun'],
-            environment={'TS_HOSTNAME': 'steam-lancache', 'TS_STATE_DIR': '/var/lib/tailscale',
+            environment={'TS_HOSTNAME': args.hostname, 'TS_STATE_DIR': '/var/lib/tailscale',
                 'TS_AUTH_ONCE': 'false', 'TS_BOOT_TIMEOUT': '30m', 'TS_USERSPACE': 'false',
                 'TS_ACCEPT_DNS': 'false', 'TS_EXTRA_ARGS': f'--accept-dns=false --accept-routes=false --advertise-routes={ip}/32 --netfilter-mode=off'},
             volumes=[f'{args.dataset}/tailscale:/var/lib/tailscale']),
@@ -58,15 +60,20 @@ def build(args):
                 f'--upstream=[/{args.tailnet_suffix}/]100.100.100.100:53', '--timeout=5s'])}
     plan = build_plan(ip, selected, args.allow_experimental)
     services['dns']['environment'].update(plan['DNSEnvironment'])
-    return {'services': services, 'networks': {'cache_lan': {'driver': 'ipvlan',
-        'driver_opts': {'parent': args.interface, 'ipvlan_mode': 'l2'},
-        'ipam': {'config': [{'subnet': str(network), 'gateway': str(gateway), 'ip_range': f'{ip}/32'}]}}}}
+    cache_network = {'driver': args.network_driver,
+        'ipam': {'config': [{'subnet': str(network), 'gateway': str(gateway), 'ip_range': f'{ip}/32'}]}}
+    if args.network_driver == 'ipvlan':
+        cache_network['driver_opts'] = {'parent': args.interface, 'ipvlan_mode': 'l2'}
+    return {'services': services, 'networks': {'cache_lan': cache_network}}
 
 
 def parser():
     p = argparse.ArgumentParser(description=__doc__)
-    for name in ('cache-ip', 'subnet', 'gateway', 'interface', 'dataset', 'tailnet-suffix'):
+    for name in ('cache-ip', 'subnet', 'gateway', 'dataset', 'tailnet-suffix'):
         p.add_argument('--' + name, required=True)
+    p.add_argument('--interface', help='Required parent interface for ipvlan; unused for bridge.')
+    p.add_argument('--network-driver', choices=('ipvlan', 'bridge'), default='ipvlan')
+    p.add_argument('--hostname', default='steam-lancache', help='Tailscale node name; use a unique label for staging.')
     p.add_argument('--cache-gib', type=int, default=450)
     p.add_argument('--quota-gb', type=int, default=512)
     p.add_argument('--services', default='steam', help='Comma-separated service IDs; default: steam only.')

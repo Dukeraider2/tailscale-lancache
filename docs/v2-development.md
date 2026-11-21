@@ -50,6 +50,20 @@ Upstream wildcard domains become NRPT suffix rules. Windows suffix rules also ma
 
 ## Acceptance before enabling a profile on the live client
 
+### Isolated server staging
+
+The generator also supports a user-defined Docker bridge and a distinct Tailscale hostname. This avoids consuming a second LAN/DHCP address and keeps the live Steam container network separate. First inspect the NAS Docker networks and all advertised tailnet routes; the example bridge below must not overlap either. No host ports are published. Reach the private bridge address through the staging node's approved Tailscale `/32` route.
+
+```sh
+python server/generate.py --cache-ip 172.28.80.10 --subnet 172.28.80.0/24 --gateway 172.28.80.1 --network-driver bridge --hostname epic-lancache-stage --dataset /mnt/POOL/lancache/stage-epic --tailnet-suffix example-tailnet.ts.net --cache-gib 4 --quota-gb 16 --services steam,epic --allow-experimental
+```
+
+Create a separate child dataset with a 16 GB hard quota and verify sufficient free space under the parent cache quota. The 4 GiB content cache leaves the default 10 GiB free-space allowance within that child quota. A child dataset inside a 512 GB capped parent does not increase the parent limit. Inspect actual usage before starting it; do not reduce the live cache's size or delete content to make room automatically. Authenticate the staging Tailscale node and approve only its route.
+
+Before changing any client DNS, use explicit per-request address overrides to test staging HTTP and TLS connectivity. The v2 installer is not an in-place migration mechanism and refuses to overwrite an existing runtime. Keep the current Steam DNS rules pointing at the live cache during initial probes. A separate, reversible Epic-only client DNS trial still needs implementation and validation before testing the launcher alongside an existing v1 client.
+
+### Per-service acceptance
+
 For each service, record the launcher/version and check all of the following with Mullvad connected and disconnected:
 
 1. Steam, MagicDNS, ordinary DNS and cache heartbeat still pass the v1 connectivity test.

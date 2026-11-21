@@ -49,6 +49,22 @@ class ComposeTests(unittest.TestCase):
         self.assertNotIn('LANCACHE_IP', env)
         self.assertEqual(doc['services']['cache']['environment']['CACHE_DISK_SIZE'], '450g')
 
+    def test_isolated_bridge_staging(self):
+        doc = generate.build(self.args(cache_ip='172.28.80.10', subnet='172.28.80.0/24',
+            gateway='172.28.80.1', network_driver='bridge', interface=None,
+            hostname='epic-lancache-stage', cache_gib=4, quota_gb=16,
+            services='steam,epic', allow_experimental=True))
+        self.assertEqual(doc['networks']['cache_lan']['driver'], 'bridge')
+        self.assertNotIn('driver_opts', doc['networks']['cache_lan'])
+        self.assertNotIn('ports', doc['services']['cache'])
+        self.assertEqual(doc['services']['tailscale']['environment']['TS_HOSTNAME'], 'epic-lancache-stage')
+        self.assertIn('--advertise-routes=172.28.80.10/32', doc['services']['tailscale']['environment']['TS_EXTRA_ARGS'])
+
+    def test_ipvlan_requires_interface_and_hostname_is_validated(self):
+        for changes in (dict(interface=None), dict(hostname='bad name'), dict(hostname='x' * 64)):
+            with self.subTest(changes=changes), self.assertRaises(ValueError):
+                generate.build(self.args(**changes))
+
 
 if __name__ == '__main__':
     unittest.main()
