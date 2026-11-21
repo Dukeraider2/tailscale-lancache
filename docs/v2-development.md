@@ -78,6 +78,8 @@ Reports may include account identifiers, signed URLs or IP addresses. Store them
 
 ## Milestones
 
+Staging-preparation finding: the Windows Tailscale background service reported a control-server connection failure while its CLI control-protocol probe succeeded. Restarting the service alone did not repair it. Removing the Tailscale service and CLI from Mullvad exclusions restored `Running` with an empty health list; Steam discovery, MagicDNS, HTTP 204 cache heartbeat and ordinary HTTPS passed with Mullvad disconnected and connected. This establishes a healthier baseline for the staged tests, not an Epic cache result. Verify the installed VPN versions and retain rollback settings when testing another machine.
+
 - Implemented in this increment: explicit service catalog, pinned client hostname snapshot with attribution, guarded server profile generation, Windows service-plan import and cleanup, regression tests and Windows CI checks.
 - Next: staged Epic HTTP/HTTPS/download validation and actual HIT evidence, then EA and Microsoft profiles one at a time; lock server-side domain/image versions to the same reviewed snapshot.
 - Reliability work: health-based DNS bypass/recovery with state persistence, transition tests, metrics and in-place upgrades. Do not redirect DNS to a dead service during recovery.
