@@ -15,6 +15,8 @@ CATALOG = {
     'amazon': {'state': 'research', 'reason': 'No profile verified; retain direct downloads.'},
     'nexusmods': {'state': 'research', 'reason': 'Upstream hostname exists; cacheable HTTP and authenticated downloads need validation.'},
     'loverslab': {'state': 'research', 'reason': 'Authenticated downloads and cacheability need validation.'},
+    'moddb': {'state': 'research', 'reason': 'Validate file IDs, mirror redirects and archive reuse; no transparent cache profile verified.'},
+    'itchio': {'state': 'research', 'reason': 'Evaluate supported butlerd integration and build-aware local storage; no transparent cache profile verified.'},
 }
 DOMAIN = re.compile(r'(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}')
 
