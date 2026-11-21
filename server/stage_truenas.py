@@ -41,7 +41,20 @@ def check_overlap(subnet, networks, routes):
     candidate = ipaddress.IPv4Network(subnet)
     occupied = []
     for network in networks:
-        for entry in network.get('IPAM', {}).get('Config', []):
+        # Docker host/none networks legitimately report null IPAM or Config.
+        ipam = network.get('IPAM')
+        if ipam is None:
+            ipam = {}
+        if not isinstance(ipam, dict):
+            raise ValueError('Unexpected Docker IPAM data; stopped before making changes.')
+        entries = ipam.get('Config')
+        if entries is None:
+            entries = []
+        if not isinstance(entries, list):
+            raise ValueError('Unexpected Docker subnet configuration; stopped before making changes.')
+        for entry in entries:
+            if not isinstance(entry, dict):
+                raise ValueError('Unexpected Docker subnet entry; stopped before making changes.')
             if entry.get('Subnet'):
                 occupied.append(entry['Subnet'])
     occupied.extend(route['dst'] for route in routes if route.get('dst') not in (None, 'default', '0.0.0.0/0'))

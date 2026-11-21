@@ -32,6 +32,20 @@ class StageTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             stage.check_overlap('172.28.80.0/24', [], [{'dst':'172.28.80.10/32'}])
 
+    def test_null_ipam_config_from_host_and_none_networks(self):
+        networks = [{'Name':'host','IPAM':{'Driver':'default','Config':None}},
+            {'Name':'none','IPAM':None}, {'Name':'empty'},
+            {'Name':'bridge','IPAM':{'Config':[{'Subnet':'192.168.50.0/24'}]}}]
+        stage.check_overlap('172.28.80.0/24', networks, [])
+        networks.append({'Name':'conflict','IPAM':{'Config':[{'Subnet':'172.28.0.0/16'}]}})
+        with self.assertRaises(ValueError):
+            stage.check_overlap('172.28.80.0/24', networks, [])
+
+    def test_malformed_ipam_does_not_bypass_overlap_validation(self):
+        for value in ('invalid', {'Config':'invalid'}, {'Config':[None]}):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                stage.check_overlap('172.28.80.0/24', [{'IPAM':value}], [])
+
     def test_size_properties_fail_closed(self):
         self.assertEqual(stage.size_property({'rawvalue':'16000000000'}), stage.QUOTA)
         self.assertEqual(stage.size_property({'parsed':stage.QUOTA}), stage.QUOTA)
@@ -51,7 +65,10 @@ class StageTests(unittest.TestCase):
             raise AssertionError('Unexpected mutation: ' + method)
         def command(command):
             if command == ['docker','network','ls','-q']:
-                return ''
+                return 'host-network\nbridge-network'
+            if command == ['docker','network','inspect','host-network','bridge-network']:
+                return json.dumps([{'IPAM':{'Config':None}},
+                    {'IPAM':{'Config':[{'Subnet':'192.168.50.0/24'}]}}])
             if command == ['ip','-j','-4','route','show','table','all']:
                 return '[]'
             raise AssertionError('Unexpected command: ' + str(command))
