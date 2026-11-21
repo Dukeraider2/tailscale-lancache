@@ -1,0 +1,15 @@
+.env
+.env.*
+!.env.example
+generated/
+state/
+logs/
+*.log
+*.zip
+*.exe
+*.key
+*.pem
+__pycache__/
+*.pyc
+client-config.json
+original-state.json
