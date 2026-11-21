@@ -102,6 +102,8 @@ Reports may include account identifiers, signed URLs or IP addresses. Store them
 
 ## Milestones
 
+The [Epic Launcher Preview 0.120.0 staging report](validation/epic-preview-0.120.md) records successful Tailscale/Mullvad endpoint checks and a real 20XX download trial. The tested client sends game traffic through HTTPS passthrough, with no demonstrated cache HIT. Epic remains experimental; do not promote its domain profile based on successful transport checks.
+
 Staging-preparation finding: the Windows Tailscale background service reported a control-server connection failure while its CLI control-protocol probe succeeded. Restarting the service alone did not repair it. Removing the Tailscale service and CLI from Mullvad exclusions restored `Running` with an empty health list; Steam discovery, MagicDNS, HTTP 204 cache heartbeat and ordinary HTTPS passed with Mullvad disconnected and connected. This establishes a healthier baseline for the staged tests, not an Epic cache result. Verify the installed VPN versions and retain rollback settings when testing another machine.
 
 - Implemented in this increment: explicit service catalog, pinned client hostname snapshot with attribution, guarded server profile generation, Windows service-plan import and cleanup, regression tests and Windows CI checks.
