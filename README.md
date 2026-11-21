@@ -1,5 +1,7 @@
 # Tailscale LANCache
 
+**v2 development branch:** the initial multi-service profile implementation is available for staged testing. Steam remains the default. See [v2 development and compatibility](docs/v2-development.md) before enabling experimental profiles. The published v1.0.0 release remains the baseline for the existing deployment.
+
 Steam LANCache on a Docker-based TrueNAS system, reached through Tailscale from a Windows PC with Mullvad connected or disconnected. This is an installable v1 source package extracted from a working deployment. All network addresses, tailnet names and storage paths are supplied at installation time. No authentication keys, device state, personal logs or binaries are included.
 
 ## How it works
@@ -82,6 +84,6 @@ For a server restart or image upgrade, restart the entire Compose app because se
 
 Generated deployment files, runtime configuration, authentication state, logs, downloaded executables and archives are excluded by `.gitignore`. Keep generated files private; they contain your network topology. The distributed example configuration contains only generic values. Third-party components retain their own licenses and are downloaded separately.
 
-v1 supports Steam discovery and the coexistence configuration above. v2 research targets Microsoft, EA, Epic, GOG, Amazon Games, Nexus Mods and LoversLab. These integrations are **not implemented**. HTTPS, authentication, signed URLs and publisher behavior need separate evaluation; this project does not intercept TLS or promise those services can be cached.
+v1 supports Steam discovery and the coexistence configuration above. The v2 branch adds opt-in experimental profile generation for Epic, EA/Origin, Microsoft Xbox content and Microsoft updates. Those profiles have not passed download/cache-HIT acceptance tests. GOG, Amazon Games, Nexus Mods and LoversLab remain research-only and cannot be enabled. HTTPS, authentication, signed URLs and publisher behavior need separate evaluation; this project does not intercept TLS or promise those services can be cached.
 
-Run source checks with `python -m unittest discover -s tests -v` and `powershell -NoProfile -File tests/Check-Syntax.ps1`. No production settings are changed by these checks.
+Run source checks with `python -m unittest discover -s tests -v`, `powershell -NoProfile -File tests/Check-Syntax.ps1` and `powershell -NoProfile -File tests/Check-ServicePlan.ps1`. No production settings are changed by these checks.

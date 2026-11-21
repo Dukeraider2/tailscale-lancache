@@ -10,7 +10,7 @@ foreach ($name in $TaskNames) {
     $task = Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue
     if ($task) { Stop-ScheduledTask -TaskName $name; Unregister-ScheduledTask -TaskName $name -Confirm:$false }
 }
-foreach ($rule in @(Get-DnsClientNrptRule | Where-Object { $_.Comment -in @($SteamMarker,$MagicMarker) })) {
+foreach ($rule in @(Get-DnsClientNrptRule | Where-Object { $_.Comment -in @($SteamMarker,$MagicMarker,$ServiceMarker) })) {
     Remove-DnsClientNrptRule -Name $rule.Name -Force
 }
 Set-DnsClientGlobalSetting -SuffixSearchList @($state.Suffixes)

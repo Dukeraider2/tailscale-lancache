@@ -4,9 +4,14 @@ import ipaddress
 import json
 from pathlib import Path
 import re
+try:
+    from .profiles import build_plan, select_services
+except ImportError:
+    from profiles import build_plan, select_services
 
 
 def build(args):
+    selected = select_services(args.services, args.allow_experimental)
     address = ipaddress.IPv4Address(args.cache_ip)
     network = ipaddress.IPv4Network(args.subnet, strict=True)
     gateway = ipaddress.IPv4Address(args.gateway)
@@ -51,6 +56,8 @@ def build(args):
             network_mode='service:cache', depends_on=['dns', 'tailscale'],
             command=['--listen=0.0.0.0', '--port=8053', '--upstream=tcp://127.0.0.1:53',
                 f'--upstream=[/{args.tailnet_suffix}/]100.100.100.100:53', '--timeout=5s'])}
+    plan = build_plan(ip, selected, args.allow_experimental)
+    services['dns']['environment'].update(plan['DNSEnvironment'])
     return {'services': services, 'networks': {'cache_lan': {'driver': 'ipvlan',
         'driver_opts': {'parent': args.interface, 'ipvlan_mode': 'l2'},
         'ipam': {'config': [{'subnet': str(network), 'gateway': str(gateway), 'ip_range': f'{ip}/32'}]}}}}
@@ -62,6 +69,8 @@ def parser():
         p.add_argument('--' + name, required=True)
     p.add_argument('--cache-gib', type=int, default=450)
     p.add_argument('--quota-gb', type=int, default=512)
+    p.add_argument('--services', default='steam', help='Comma-separated service IDs; default: steam only.')
+    p.add_argument('--allow-experimental', action='store_true', help='Explicitly opt in to unverified service profiles.')
     p.add_argument('--output', type=Path, default=Path('generated/compose.yaml'))
     return p
 
@@ -76,4 +85,6 @@ if __name__ == '__main__':
     args.output.parent.mkdir(parents=True, exist_ok=True)
     # JSON is valid YAML 1.2 and is accepted by Docker Compose.
     args.output.write_text(json.dumps(document, indent=2) + '\n', encoding='utf-8')
+    plan = build_plan(args.cache_ip, select_services(args.services, args.allow_experimental), args.allow_experimental)
+    args.output.with_name('client-plan.json').write_text(json.dumps(plan, indent=2) + '\n', encoding='utf-8')
     print(f'Wrote {args.output}. Dataset creation, quota, login and route approval are separate steps.')

@@ -1,11 +1,6 @@
-import importlib.util
 import json
-from pathlib import Path
 import unittest
-
-spec = importlib.util.spec_from_file_location('generate', Path(__file__).resolve().parents[1] / 'server/generate.py')
-generate = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(generate)
+from server import generate
 
 
 class ComposeTests(unittest.TestCase):
@@ -41,6 +36,18 @@ class ComposeTests(unittest.TestCase):
         for ip, subnet, gateway in [('10.20.0.10', '10.20.0.0/24', '10.20.0.1'),
                                    ('172.20.0.10', '172.20.0.0/24', '172.20.0.1')]:
             self.assertTrue(generate.build(self.args(cache_ip=ip, subnet=subnet, gateway=gateway)))
+
+    def test_experimental_services_are_explicit_and_scoped(self):
+        with self.assertRaises(ValueError):
+            generate.build(self.args(services='steam,epic'))
+        doc = generate.build(self.args(services='steam,epic,ea,microsoft-xbox', allow_experimental=True))
+        env = doc['services']['dns']['environment']
+        self.assertEqual(env['EPICGAMESCACHE_IP'], '192.168.50.10')
+        self.assertEqual(env['ORIGINCACHE_IP'], '192.168.50.10')
+        self.assertEqual(env['XBOXLIVECACHE_IP'], '192.168.50.10')
+        self.assertNotIn('WSUSCACHE_IP', env)
+        self.assertNotIn('LANCACHE_IP', env)
+        self.assertEqual(doc['services']['cache']['environment']['CACHE_DISK_SIZE'], '450g')
 
 
 if __name__ == '__main__':
