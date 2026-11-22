@@ -1,12 +1,14 @@
 # Tailscale LANCache
 
+**v2 development branch:** the initial multi-service profile implementation is available for staged testing. Steam remains the default. See [v2 development and compatibility](docs/v2-development.md) before enabling experimental profiles. The published v1.0.0 release remains the baseline for the existing deployment.
+
 Steam LANCache on a Docker-based TrueNAS system, reached through Tailscale from a Windows PC with Mullvad connected or disconnected. This is an installable v1 source package extracted from a working deployment. All network addresses, tailnet names and storage paths are supplied at installation time. No authentication keys, device state, personal logs or binaries are included.
 
 ## How it works
 
 Steam discovers a private RFC1918 cache address. The cache advertises that single address as a Tailscale `/32` route. A Windows DNS proxy listens only on localhost and sends selected DNS queries to the cache on TCP 8053. Owned NRPT rules cover Steam discovery and exact MagicDNS device names. Ordinary DNS continues to use the PC's existing resolver.
 
-Mullvad excludes the Tailscale service and CLI, allowing Tailscale to carry the cache connection while normal traffic uses Mullvad. The local DNS proxy is not excluded. This is a coexistence configuration; results depend on VPN versions and policies. See [Tailscale's other-VPN guidance](https://tailscale.com/docs/reference/faq/other-vpns) and [LANCache troubleshooting](https://lancache.net/docs/common-issues/).
+Tailscale carries the private cache route while normal internet traffic uses Mullvad when connected. During v2 staging preparation, the Windows Tailscale background service recovered its control connection when its Mullvad exclusions were removed; the baseline then passed with Mullvad connected and disconnected. Older deployments used exclusions. Test the background service's health as well as peer connectivity before choosing a configuration. Results depend on VPN versions and policies. See [Tailscale's other-VPN guidance](https://tailscale.com/docs/reference/faq/other-vpns) and [LANCache troubleshooting](https://lancache.net/docs/common-issues/).
 
 ## Requirements
 
@@ -36,7 +38,9 @@ The dnsproxy image is pinned to v0.86.0. LANCache uses its upstream `latest` tag
 
 ## Configure Mullvad
 
-In Mullvad split tunneling, enable exclusions for the installed Tailscale service and CLI (`tailscaled.exe` and `tailscale.exe`, normally under `C:\Program Files\Tailscale`). Keep Mullvad's normal DNS setting. Do not exclude `dnsproxy.exe` or configure the PC's whole DNS service to use the cache. Restart Tailscale if it cannot reconnect after enabling the exclusions.
+Enable Mullvad LAN sharing and keep its normal DNS setting. Start with Tailscale running through the normal VPN tunnel, without exclusions for `tailscaled.exe` or `tailscale.exe`. Do not exclude `dnsproxy.exe` or configure the PC's whole DNS service to use the cache. Check that Tailscale reports `Running` with no health warnings, then test cache access, MagicDNS and normal internet traffic in both VPN states.
+
+If that configuration cannot carry Tailscale traffic, split-tunnel exclusions for the installed Tailscale service and CLI are an alternative to test. Keep them only if coordination-server connectivity and all baseline checks pass. A successful command-line control probe or a cached peer connection alone does not prove that the Windows background service can synchronize its network map. Removing the exclusions resolved that distinction during v2 staging preparation.
 
 The installer deliberately leaves Mullvad settings and Tailscale enrollment to the operator. It does not disable either VPN or alter security settings.
 
@@ -82,6 +86,7 @@ For a server restart or image upgrade, restart the entire Compose app because se
 
 Generated deployment files, runtime configuration, authentication state, logs, downloaded executables and archives are excluded by `.gitignore`. Keep generated files private; they contain your network topology. The distributed example configuration contains only generic values. Third-party components retain their own licenses and are downloaded separately.
 
-v1 supports Steam discovery and the coexistence configuration above. v2 research targets Microsoft, EA, Epic, GOG, Amazon Games, Nexus Mods and LoversLab. These integrations are **not implemented**. HTTPS, authentication, signed URLs and publisher behavior need separate evaluation; this project does not intercept TLS or promise those services can be cached.
+v1 supports Steam discovery and the coexistence configuration above; a [140 reinstall verified actual content HITs](docs/validation/steam-140.md). The v2 branch retains experimental generation for Microsoft Xbox content, Microsoft updates and explicit Epic transport/workaround research. No non-Steam profile has passed local cache-HIT acceptance. Modern EA App generation is disabled after upstream HTTPS review. GOG, Amazon Games, Nexus Mods, LoversLab, Mod DB and itch.io remain research-only and cannot be enabled. The [encryption review and pruned shortlist](docs/service-cache-shortlist.md) removes default HTTPS paths from normal transparent pilots and distinguishes archive/native integrations. The [service requirements plan](docs/v2-service-requirements.md) retains acceptance requirements for each target. This project does not intercept TLS or automatically downgrade launcher protocols.
 
-Run source checks with `python -m unittest discover -s tests -v` and `powershell -NoProfile -File tests/Check-Syntax.ps1`. No production settings are changed by these checks.
+Run source checks with `python -m unittest discover -s tests -v`, `powershell -NoProfile -File tests/Check-Syntax.ps1`, `powershell -NoProfile -File tests/Check-ServicePlan.ps1` and `powershell -NoProfile -File tests/Check-StagedEndpoint.ps1`. No production settings are changed by these checks.
+

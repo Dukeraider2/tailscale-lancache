@@ -1,11 +1,6 @@
-import importlib.util
 import json
-from pathlib import Path
 import unittest
-
-spec = importlib.util.spec_from_file_location('generate', Path(__file__).resolve().parents[1] / 'server/generate.py')
-generate = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(generate)
+from server import generate
 
 
 class ComposeTests(unittest.TestCase):
@@ -42,6 +37,37 @@ class ComposeTests(unittest.TestCase):
                                    ('172.20.0.10', '172.20.0.0/24', '172.20.0.1')]:
             self.assertTrue(generate.build(self.args(cache_ip=ip, subnet=subnet, gateway=gateway)))
 
+    def test_experimental_services_are_explicit_and_scoped(self):
+        with self.assertRaises(ValueError):
+            generate.build(self.args(services='steam,epic'))
+        with self.assertRaisesRegex(ValueError, 'ea is research-only'):
+            generate.build(self.args(services='steam,ea', allow_experimental=True))
+        doc = generate.build(self.args(services='steam,epic,microsoft-xbox', allow_experimental=True))
+        env = doc['services']['dns']['environment']
+        self.assertEqual(env['EPICGAMESCACHE_IP'], '192.168.50.10')
+        self.assertNotIn('ORIGINCACHE_IP', env)
+        self.assertEqual(env['XBOXLIVECACHE_IP'], '192.168.50.10')
+        self.assertNotIn('WSUSCACHE_IP', env)
+        self.assertNotIn('LANCACHE_IP', env)
+        self.assertEqual(doc['services']['cache']['environment']['CACHE_DISK_SIZE'], '450g')
+
+    def test_isolated_bridge_staging(self):
+        doc = generate.build(self.args(cache_ip='172.28.80.10', subnet='172.28.80.0/24',
+            gateway='172.28.80.1', network_driver='bridge', interface=None,
+            hostname='epic-lancache-stage', cache_gib=4, quota_gb=16,
+            services='steam,epic', allow_experimental=True))
+        self.assertEqual(doc['networks']['cache_lan']['driver'], 'bridge')
+        self.assertNotIn('driver_opts', doc['networks']['cache_lan'])
+        self.assertNotIn('ports', doc['services']['cache'])
+        self.assertEqual(doc['services']['tailscale']['environment']['TS_HOSTNAME'], 'epic-lancache-stage')
+        self.assertIn('--advertise-routes=172.28.80.10/32', doc['services']['tailscale']['environment']['TS_EXTRA_ARGS'])
+
+    def test_ipvlan_requires_interface_and_hostname_is_validated(self):
+        for changes in (dict(interface=None), dict(hostname='bad name'), dict(hostname='x' * 64)):
+            with self.subTest(changes=changes), self.assertRaises(ValueError):
+                generate.build(self.args(**changes))
+
 
 if __name__ == '__main__':
     unittest.main()
+

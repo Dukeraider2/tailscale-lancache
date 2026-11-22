@@ -5,10 +5,17 @@ param(
     [Parameter(Mandatory)][ValidatePattern('^[a-z0-9-]+\.ts\.net$')][string]$TailnetSuffix,
     [string]$LanSubnet,
     [string]$InterfaceAlias = 'Tailscale',
+    [string]$ServicePlan,
+    [switch]$AllowExperimental,
     [string]$TailscalePath = "$env:ProgramFiles\Tailscale\tailscale.exe"
 )
 . "$PSScriptRoot\Common.ps1"
 Assert-CacheAddress $CacheIP
+$serviceNamespaces = @()
+if ($ServicePlan) {
+    $plan = Import-ServicePlan $ServicePlan $CacheIP $AllowExperimental.IsPresent
+    $serviceNamespaces = @($plan.Namespaces | Where-Object { $_ -notin @('lancache.steamcontent.com','steam.cache.lancache.net') } | Sort-Object -Unique)
+}
 if ($LanSubnet -and $LanSubnet -notmatch '^\d{1,3}(\.\d{1,3}){3}/\d{1,2}$') { throw 'Invalid LAN subnet CIDR.' }
 if (-not $PSCmdlet.ShouldProcess($Root, 'Install local DNS proxy, owned NRPT rules and SYSTEM startup tasks')) { return }
 Assert-Administrator
@@ -16,7 +23,7 @@ if (Test-Path -LiteralPath $Root) { throw 'Already installed or a previous insta
 foreach ($name in $TaskNames) {
     if (Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue) { throw 'A product task already exists. Resolve the previous installation before proceeding.' }
 }
-if (@(Get-DnsClientNrptRule | Where-Object { $_.Comment -in @($SteamMarker,$MagicMarker) }).Count) {
+if (@(Get-DnsClientNrptRule | Where-Object { $_.Comment -in @($SteamMarker,$MagicMarker,$ServiceMarker) }).Count) {
     throw 'Product DNS rules already exist. Resolve the previous installation before proceeding.'
 }
 if (-not (Test-Path -LiteralPath $TailscalePath)) { throw 'Install and sign in to Tailscale first.' }
@@ -52,7 +59,7 @@ try {
     $state = @{ Suffixes = @((Get-DnsClientGlobalSetting).SuffixSearchList); InterfaceAlias = $InterfaceAlias;
         InterfaceMetric = $adapter.InterfaceMetric; AutomaticMetric = [string]$adapter.AutomaticMetric }
     $state | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $Root 'original-state.json') -Encoding UTF8
-    @{ CacheIP=$CacheIP; TailnetSuffix=$TailnetSuffix; LanSubnet=$LanSubnet; InterfaceAlias=$InterfaceAlias; TailscalePath=$TailscalePath } |
+    @{ CacheIP=$CacheIP; TailnetSuffix=$TailnetSuffix; LanSubnet=$LanSubnet; InterfaceAlias=$InterfaceAlias; TailscalePath=$TailscalePath; ServiceNamespaces=$serviceNamespaces } |
         ConvertTo-Json | Set-Content -LiteralPath (Join-Path $Root 'client-config.json') -Encoding UTF8
     Copy-Item -LiteralPath $exe[0].FullName -Destination (Join-Path $Root 'dnsproxy.exe')
     foreach ($name in @('Common.ps1','Maintain.ps1','Uninstall.ps1','Test.ps1')) { Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination $Root }
@@ -63,6 +70,7 @@ try {
     Start-ScheduledTask -TaskName $TaskNames[0]
     Start-Sleep -Seconds 2
     Set-OwnedRule $SteamMarker @('lancache.steamcontent.com','steam.cache.lancache.net')
+    if ($serviceNamespaces.Count) { Set-OwnedRule $ServiceMarker $serviceNamespaces }
     $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 1)
     $action = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -Argument ('-NoProfile -NonInteractive -WindowStyle Hidden -File "' + (Join-Path $Root 'Maintain.ps1') + '"')
     Register-ScheduledTask -TaskName $TaskNames[1] -Action $action -Trigger @((New-ScheduledTaskTrigger -AtStartup),$trigger) -Principal $principal -Settings $settings | Out-Null

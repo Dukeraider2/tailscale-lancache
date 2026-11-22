@@ -1,0 +1,24 @@
+name: Source checks
+on:
+  push:
+    branches: [main, v2-development]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Python unit and CLI tests
+        shell: powershell
+        run: |
+          python -m unittest discover -s tests -v
+          if ($LASTEXITCODE -ne 0) { throw 'Python checks failed.' }
+      - name: Windows PowerShell validation
+        shell: powershell
+        run: |
+          & ./tests/Check-Syntax.ps1
+          & ./tests/Check-ServicePlan.ps1
+          & ./tests/Check-StagedEndpoint.ps1
