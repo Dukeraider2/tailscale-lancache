@@ -19,7 +19,7 @@ class ProfileTests(unittest.TestCase):
         for service in ('epic', 'ea', 'microsoft-xbox', 'microsoft-updates'):
             with self.subTest(service=service), self.assertRaises(ValueError):
                 select_services('steam,' + service)
-        for service in ('gog', 'amazon', 'nexusmods', 'loverslab', 'unknown'):
+        for service in ('ea', 'gog', 'amazon', 'nexusmods', 'loverslab', 'moddb', 'itchio', 'unknown'):
             with self.subTest(service=service), self.assertRaises(ValueError):
                 select_services('steam,' + service, True)
         for empty in ('', 'epic', ',,,'):
@@ -67,3 +67,4 @@ class ProfileTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

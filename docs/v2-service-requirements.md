@@ -2,6 +2,8 @@
 
 Research date: 2026-11-21. This is an implementation plan, not a compatibility announcement. Mod DB (`moddb.com`, catalog ID `moddb`) and itch.io (`itchio`) are now research targets. They cannot be enabled as DNS profiles yet.
 
+The later [encryption review and pruned shortlist](service-cache-shortlist.md) sets the current pilot order. Default Epic, EA App, GOG Galaxy, Amazon Games and the tested Nexus manual path are removed from normal transparent pilots. EA generation is disabled; Epic is retained only for explicit transport/workaround research. Microsoft PC content/updates remain candidates, while LoversLab, Mod DB and itch.io are deferred without claiming every final mirror is encrypted.
+
 The project needs three delivery paths: transparent caching for demonstrated HTTP payloads, vendor-native delivery where available, and a local library of legitimately downloaded archives/installers for other services. A successful HTTPS download through LANCache is passthrough, not a cache HIT. Gameplay, cloud gaming streams, account login, payments and multiplayer servers are outside the content-cache scope.
 
 ## What the router investigation establishes
@@ -59,6 +61,7 @@ Deliverable for each run: a redacted endpoint map with observation time/TTL, pro
 
 ### EA app — new observation, not inherited Origin support
 
+- Removed from the current transparent pilot queue after [maintainer HTTPS tracking review](https://github.com/uklans/cache-domains/issues/221); generation is disabled. The requirements below apply only if changed client behavior justifies revisiting it.
 - Obtain a current signed-in EA client and a small owned test title; include its download/background service in process attribution.
 - Treat the existing [three-host Origin list](https://raw.githubusercontent.com/uklans/cache-domains/master/origin.txt) as candidates. Its existence does not verify modern EA app or every EA title.
 - Discover payload hosts/protocol, distinguish login/entitlement and game traffic, and test full install, update, pause/resume and repair. EA documents its [installation/recovery flows](https://help.ea.com/en/articles/orders-and-rewards/ea-app-game-download-installation-loading-not-working/), not a universal NAS cache interface.
@@ -121,9 +124,9 @@ Deliverable for each run: a redacted endpoint map with observation time/TTL, pro
 
 ## Development order and release gates
 
-1. **Observability and recovery:** synchronized Epic bulk capture, metadata schema, TCP/UDP coverage, upstream-IP stream metadata, per-service DNS bypass/recovery and rollback. Preserve the current Steam baseline.
+1. **Observability and recovery:** build on the completed Epic/Steam/Nexus evidence, add TCP/UDP coverage and per-service DNS bypass/recovery and rollback. Preserve the verified Steam baseline.
 2. **Archive foundation:** versioned/hash-verified storage, quotas, partial-download handling, authorized local serving and user isolation. Pilot GOG offline installers and a public Mod DB archive; then itch.io's supported integration.
-3. **Independent publisher pilots:** current EA app, PC Game Pass and updates/DO. Resource/license-gate MCC separately. Keep legacy candidate lists disabled until role/protocol review.
+3. **Independent publisher pilots:** PC Game Pass and updates/DO. Resource/license-gate MCC separately. EA remains removed unless new evidence establishes a workable path; keep legacy lists disabled.
 4. **Authenticated adapters:** Nexus's supported flows, LoversLab manual import, then Amazon/Epic local-library paths only where restore/update behavior is demonstrated.
 
 Each pilot needs a chosen owned/public test item and current client version. Acceptance includes login/catalog remaining normal, correct content identity, warm reuse evidence appropriate to its mechanism, integrity, updates/resume, VPN-on/off, remote Tailscale, reboot, peer/server outage, no accidental VPN bypass, and clean uninstall. Scope an acceptance result to the tested client/title/build. No new profile is production-ready merely because it appears in the catalog or this plan.

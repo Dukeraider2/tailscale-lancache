@@ -7,14 +7,18 @@ Status: source implementation for staged testing. No v2 production release or li
 | Service ID | Initial state | Coverage and limits |
 | --- | --- | --- |
 | `steam` | Default baseline | Content HITs verified for a 140 reinstall with Mullvad connected; see the [test evidence](validation/steam-140.md). Other acceptance cases remain. |
-| `epic` | Experimental opt-in | Upstream Epic CDN list; launchers and individual games require testing. |
-| `ea` | Experimental opt-in | Upstream Origin CDN list; this is not proof of current EA App compatibility. |
+| `epic` | Explicit research opt-in | Default preview failed caching; version-specific HTTP workaround reports remain separate research. |
+| `ea` | Research only; generation disabled | Modern EA App is tracked upstream as HTTPS-blocked. Old Origin lists do not establish support. |
 | `microsoft-xbox` | Experimental opt-in | Upstream Xbox Live content list; not a guarantee for all Xbox/Game Pass/Store titles. |
 | `microsoft-updates` | Separate experimental opt-in | Upstream Windows Update/Office delivery list; not implied by Xbox selection. |
 | `gog` | Research only | No validated profile. Direct downloads remain in use. |
 | `amazon` | Research only | No validated Amazon Games profile. Direct downloads remain in use. |
-| `nexusmods` | Research only | Upstream lists a delivery hostname, but HTTP cacheability and authenticated-download behavior need testing. |
-| `loverslab` | Research only | No validated profile; authenticated download and HTTPS behavior need testing. |
+| `nexusmods` | Archive research only | Selected manual download used HTTPS without HITs; transparent pilot removed. |
+| `loverslab` | Manual archive research | No established transparent path; final mirror protocol is unverified. |
+| `moddb` | Mirror/archive research | No established transparent path; discovery-page HTTPS does not prove final mirror protocol. |
+| `itchio` | Native/local-library research | No established transparent HIT path; inspect final archive delivery separately. |
+
+The [encryption review and pruned shortlist](service-cache-shortlist.md) is the current pilot decision: Steam retained, Microsoft PC content/updates next, default Epic/EA/GOG/Amazon/Nexus removed from normal transparent pilots, and the remaining archive/native targets deferred.
 
 The upstream [service registry](https://github.com/uklans/cache-domains/blob/f7d6206f4769d6bf0274b5ad79e6bebda7753b17/cache_domains.json) and [domain files](https://github.com/uklans/cache-domains/tree/f7d6206f4769d6bf0274b5ad79e6bebda7753b17) provide hostname evidence, not results from this deployment. Selected host lists are recorded in `server/domains.lock.json` with the upstream commit and MIT license in `third_party/`. No automatic domain-list update occurs in the generator.
 
@@ -109,9 +113,9 @@ The [Epic Launcher Preview 0.120.0 staging report](validation/epic-preview-0.120
 Staging-preparation finding: the Windows Tailscale background service reported a control-server connection failure while its CLI control-protocol probe succeeded. Restarting the service alone did not repair it. Removing the Tailscale service and CLI from Mullvad exclusions restored `Running` with an empty health list; Steam discovery, MagicDNS, HTTP 204 cache heartbeat and ordinary HTTPS passed with Mullvad disconnected and connected. This establishes a healthier baseline for the staged tests, not an Epic cache result. Verify the installed VPN versions and retain rollback settings when testing another machine.
 
 - Implemented in this increment: explicit service catalog, pinned client hostname snapshot with attribution, guarded server profile generation, Windows service-plan import and cleanup, regression tests and Windows CI checks.
-- Next: staged Epic HTTP/HTTPS/download validation and actual HIT evidence, then EA and Microsoft profiles one at a time; lock server-side domain/image versions to the same reviewed snapshot.
+- Next: Microsoft PC content and update pilots after auditing control endpoints; lock server-side domain/image versions to the same reviewed snapshot. Keep Epic workaround research separate and EA disabled pending changed evidence.
 - Reliability work: health-based DNS bypass/recovery with state persistence, transition tests, metrics and in-place upgrades. Do not redirect DNS to a dead service during recovery.
 - Research: evaluate GOG, Amazon Games, Nexus Mods and LoversLab delivery behavior separately. Implement supported integrations only after evidence establishes a workable path; authenticated HTTPS may require a different local-download-library approach rather than transparent caching.
 
-No v2 launcher profile has passed these acceptance checks yet. This milestone starts development; it does not declare broad publisher compatibility.
+Steam has passed a same-build 140 cache-HIT reinstall with Mullvad connected. Other acceptance cases and all non-Steam cache-HIT acceptance remain outstanding; this does not declare broad publisher compatibility.
 

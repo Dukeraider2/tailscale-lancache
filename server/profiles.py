@@ -7,14 +7,14 @@ import re
 
 CATALOG = {
     'steam': {'state': 'baseline', 'environment': 'STEAMCACHE_IP', 'file': None},
-    'epic': {'state': 'experimental', 'environment': 'EPICGAMESCACHE_IP', 'file': 'epicgames.txt'},
-    'ea': {'state': 'experimental', 'environment': 'ORIGINCACHE_IP', 'file': 'origin.txt'},
+    'epic': {'state': 'experimental', 'environment': 'EPICGAMESCACHE_IP', 'file': 'epicgames.txt', 'reason': 'Default preview used HTTPS without HITs; retain only explicit transport or version-specific workaround research.'},
+    'ea': {'state': 'research', 'reason': 'Modern EA App is tracked upstream as HTTPS-blocked; legacy Origin hostnames are not a validated EA App profile.'},
     'microsoft-xbox': {'state': 'experimental', 'environment': 'XBOXLIVECACHE_IP', 'file': 'xboxlive.txt'},
     'microsoft-updates': {'state': 'experimental', 'environment': 'WSUSCACHE_IP', 'file': 'windowsupdates.txt'},
-    'gog': {'state': 'research', 'reason': 'No profile verified; retain direct downloads.'},
-    'amazon': {'state': 'research', 'reason': 'No profile verified; retain direct downloads.'},
-    'nexusmods': {'state': 'research', 'reason': 'Upstream hostname exists; cacheable HTTP and authenticated downloads need validation.'},
-    'loverslab': {'state': 'research', 'reason': 'Authenticated downloads and cacheability need validation.'},
+    'gog': {'state': 'research', 'reason': 'Galaxy is tracked upstream as HTTPS-blocked; prioritize a separate offline-installer library.'},
+    'amazon': {'state': 'research', 'reason': 'Community reports forced HTTPS; exclude from transparent pilots pending contrary evidence.'},
+    'nexusmods': {'state': 'research', 'reason': 'Selected manual download tested as HTTPS passthrough without HITs; prioritize authorized archive reuse.'},
+    'loverslab': {'state': 'research', 'reason': 'No validated transparent path; prioritize manual authorized archive import. Final mirror protocol remains unverified.'},
     'moddb': {'state': 'research', 'reason': 'Validate file IDs, mirror redirects and archive reuse; no transparent cache profile verified.'},
     'itchio': {'state': 'research', 'reason': 'Evaluate supported butlerd integration and build-aware local storage; no transparent cache profile verified.'},
 }
@@ -65,3 +65,4 @@ if __name__ == '__main__':
     parser.add_argument('--list', action='store_true', required=True)
     parser.parse_args()
     print(json.dumps(CATALOG, indent=2))
+

@@ -40,10 +40,12 @@ class ComposeTests(unittest.TestCase):
     def test_experimental_services_are_explicit_and_scoped(self):
         with self.assertRaises(ValueError):
             generate.build(self.args(services='steam,epic'))
-        doc = generate.build(self.args(services='steam,epic,ea,microsoft-xbox', allow_experimental=True))
+        with self.assertRaisesRegex(ValueError, 'ea is research-only'):
+            generate.build(self.args(services='steam,ea', allow_experimental=True))
+        doc = generate.build(self.args(services='steam,epic,microsoft-xbox', allow_experimental=True))
         env = doc['services']['dns']['environment']
         self.assertEqual(env['EPICGAMESCACHE_IP'], '192.168.50.10')
-        self.assertEqual(env['ORIGINCACHE_IP'], '192.168.50.10')
+        self.assertNotIn('ORIGINCACHE_IP', env)
         self.assertEqual(env['XBOXLIVECACHE_IP'], '192.168.50.10')
         self.assertNotIn('WSUSCACHE_IP', env)
         self.assertNotIn('LANCACHE_IP', env)
@@ -68,3 +70,4 @@ class ComposeTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
