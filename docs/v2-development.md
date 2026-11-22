@@ -6,7 +6,7 @@ Status: source implementation for staged testing. No v2 production release or li
 
 | Service ID | Initial state | Coverage and limits |
 | --- | --- | --- |
-| `steam` | Default baseline | Existing Steam discovery configuration; actual content HIT verification is still required. |
+| `steam` | Default baseline | Content HITs verified for a 140 reinstall with Mullvad connected; see the [test evidence](validation/steam-140.md). Other acceptance cases remain. |
 | `epic` | Experimental opt-in | Upstream Epic CDN list; launchers and individual games require testing. |
 | `ea` | Experimental opt-in | Upstream Origin CDN list; this is not proof of current EA App compatibility. |
 | `microsoft-xbox` | Experimental opt-in | Upstream Xbox Live content list; not a guarantee for all Xbox/Game Pass/Store titles. |
@@ -114,3 +114,4 @@ Staging-preparation finding: the Windows Tailscale background service reported a
 - Research: evaluate GOG, Amazon Games, Nexus Mods and LoversLab delivery behavior separately. Implement supported integrations only after evidence establishes a workable path; authenticated HTTPS may require a different local-download-library approach rather than transparent caching.
 
 No v2 launcher profile has passed these acceptance checks yet. This milestone starts development; it does not declare broad publisher compatibility.
+

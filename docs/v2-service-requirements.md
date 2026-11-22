@@ -43,6 +43,7 @@ Deliverable for each run: a redacted endpoint map with observation time/TTL, pro
 
 ### Steam — retain the baseline
 
+- The [140 reinstall test](validation/steam-140.md) verified all 126 repeated game-chunk requests as cache HITs with Mullvad connected, with matching installed-file hashes. Scope this result to the tested build; VPN-off content, remote-network and outage acceptance remain separate.
 - Keep the current narrow Steam discovery rules, cache route and existing parent quota; no new service changes the live Steam baseline.
 - Record a cold and repeated same-build download with cache log HIT bytes, file validation and WAN reduction. Test updates, resume and Steam Deck as separate client cases.
 - Keep native Steam local transfers distinct from LANCache. Valve requires online clients with allowed transfer settings and direct LAN connectivity; native discovery/transfer uses UDP 27031–27036 and TCP 27040. It excludes Workshop, cloud-save and shader data. Tailscale connectivity alone does not establish that native discovery works. See [Valve's transfer requirements](https://help.steampowered.com/en/faqs/view/46BD-6BA8-B012-CE43).
